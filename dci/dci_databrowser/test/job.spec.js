@@ -22,12 +22,14 @@ describe('DCI homepage', function() {
       angular.module('APIMock', ['ngMockE2E'])
 
       .run(['$httpBackend', function($httpBackend) {
+        var configResp = {'apiURL': 'http://urlEndpoint'};
         var jobRecheck = {'job': {'id': 'bar'}};
         var remotecisResp = {'remotecis': []};
         var jobsResp = {'jobs': [{'id': 'foo', 'status': 'new'}],
                         '_meta': {'count': 1}};
         var jobstatesResp = {'jobstates': []};
 
+        $httpBackend.whenGET(/\/config.json/).respond(configResp);
         $httpBackend.whenGET(/^\/partials\//).passThrough();
         $httpBackend.whenGET(/\/remotecis\//).respond(remotecisResp);
         $httpBackend.whenGET(/\/jobs\/.*?\/jobstates/).respond(jobstatesResp);

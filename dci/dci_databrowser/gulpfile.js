@@ -25,6 +25,7 @@ var utils  = require('./utils');
 var DIST = 'static';
 var JS = ['src/js/**/*.js'];
 var SCSS = ['src/css/**/*.scss'];
+var configFile = 'src/config.json';
 
 gulp.task('jscs', function() {
   return gulp.src(['src/**.js', 'test/**.js', 'gulpfile.js', 'utils.js'])
@@ -35,7 +36,8 @@ gulp.task('copy', ['clean'], function() {
   return gulp.src([
     'src/**/*',
     '!src/**/*.js',
-    '!src/**/*.scss'
+    '!src/**/*.scss',
+    configFile
   ]).pipe(gulp.dest(DIST));
 });
 

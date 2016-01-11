@@ -14,21 +14,22 @@
 
 'use strict';
 
-var conf = require('conf');
-
 require('app')
 
-.constant('apiURLS', {
-  JOBS: conf.apiURL + '/api/v1/jobs/',
-  REMOTECIS: conf.apiURL + '/api/v1/remotecis/',
-  JOBSTATES: conf.apiURL + '/api/v1/jobstates/',
-  FILES: conf.apiURL + '/api/v1/files/',
-  USERS: conf.apiURL + '/api/v1/users/',
-  TEAMS: conf.apiURL + '/api/v1/teams/',
-  COMPONENTS: conf.apiURL + '/api/v1/components/'
-})
-.factory('api', ['_', '$q', '$http', 'apiURLS', function(_, $q, $http, urls) {
-  var api = {};
+.factory('api', ['_', '$q', '$http', 'config', function(_, $q, $http, config) {
+  var api = {
+    url: config.url.then(function(url) {
+      return {
+        jobs: url + '/api/v1/jobs/',
+        remotecis: url + '/api/v1/remotecis/',
+        jobstates: url + '/api/v1/jobstates/',
+        files: url + '/api/v1/files/',
+        users: url + '/api/v1/users/',
+        teams: url + '/api/v1/teams/',
+        components: url + '/api/v1/components/'
+      }
+    })
+  };
 
   api.getJobs = function(page) {
     var offset = 20 * (page - 1);
@@ -36,19 +37,25 @@ require('app')
         'limit': 20, 'offset': offset, 'sort': '-updated_at',
         'embed': 'remoteci,jobdefinition,jobdefinition.test'
     }};
-    return $http.get(urls.JOBS, config).then(_.property('data'));
+    return api.url.then(function(url) {
+      return $http.get(url.jobs, config).then(_.property('data'));
+    });
   }
 
   api.getJobStates = function(job) {
-    var url = urls.JOBS + job + '/jobstates';
-    return $http.get(url).then(_.property('data.jobstates'));
+    return api.url.then(function(url) {
+      url = url.jobs + job + '/jobstates';
+      return $http.get(url).then(_.property('data.jobstates'));
+    })
   }
 
   api.searchJobs = function(remotecis, statuses) {
 
     function retrieveRCIs(remoteci) {
       var conf = {'params': {'where': 'name:' + remoteci}};
-      return $http.get(urls.REMOTECIS, conf);
+      return api.url.then(function(url) {
+        return $http.get(url.remotecis, conf);
+      });
     }
 
     function retrieveJobs(status) {
@@ -56,7 +63,9 @@ require('app')
         'where': 'status:' + status,
         'embed': 'remoteci,jobdefinition,jobdefinition.test'
       }};
-      return $http.get(urls.JOBS, conf);
+      return api.url.then(function(url) {
+        return $http.get(url.jobs, conf);
+      });
     }
 
     function retrieveJsRCI(remoteciResps) {
@@ -69,7 +78,9 @@ require('app')
           'embed': 'remoteci,jobdefinition,jobdefinition.test',
           'where': 'remoteci_id:' + remoteci,
         }};
-        return $http.get(urls.JOBS, conf);
+        return api.url.then(function(url) {
+          return $http.get(url.jobs, conf);
+        });
       })
       .thru($q.all)
       .value();
@@ -123,47 +134,66 @@ require('app')
     var JSconf = {'params': {'sort': '-created_at'}};
 
     return $q.all([
-      $http.get(urls.JOBS + job, conf),
-      $http.get(urls.JOBS + job + '/jobstates', JSconf)
+      api.url.then(function(url) {
+        return $http.get(url.jobs + job, conf);
+      }),
+      api.url.then(function(url) {
+        return $http.get(url.jobs + job + '/jobstates', JSconf);
+      })
     ])
     .then(retrieveFiles)
   }
 
   api.getComponents = function(jobDef) {
-    return $http.get(urls.COMPONENTS).then(_.property('data.components'));
+    return api.url.then(function(url) {
+      return $http.get(url.components).then(_.property('data.components'));
+    });
   }
 
   api.getFiles = function(jobstateID) {
     var conf = {'params': {'where': 'jobstate_id:' + jobstateID}};
-    return $http.get(urls.FILES, conf)
-    .then(_.property('data.files'));
+    return api.url.then(function(url) {
+      return $http.get(url.files, conf).then(_.property('data.files'));
+    });
   }
 
   api.getRemoteCIS = function() {
     var extractRemoteCIS = _.partialRight(_.get, 'data.remotecis');
-    return $http.get(urls.REMOTECIS).then(extractRemoteCIS);
+    return api.url.then(function(url) {
+      return $http.get(url.remotecis).then(extractRemoteCIS);
+    });
   }
 
   api.recheckJob = function(jobID) {
-    return $http.post(urls.JOBS + jobID + '/recheck')
-    .then(_.property('data.job'));
+    return api.url.then(function(url) {
+      url = url.jobs + jobID + '/recheck';
+      return $http.post(url).then(_.property('data.job'));
+    });
   }
 
   api.getUser = function(name) {
     var conf = {'params': {'embed': 'team'}};
-    return $http.get(urls.USERS + name, conf).then(_.property('data.user'));
+    return api.url.then(function(url) {
+      return $http.get(url.users + name, conf).then(_.property('data.user'));
+    });
   }
 
   api.getTeams = function() {
-    return $http.get(urls.TEAMS).then(_.property('data.teams'));
+    return api.url.then(function(url) {
+      return $http.get(url.teams).then(_.property('data.teams'));
+    });
   }
 
   api.postTeam = function(team) {
-    return $http.post(urls.TEAMS, team).then(_.property('data.team'));
+    return api.url.then(function(url) {
+      return $http.post(url.teams, team).then(_.property('data.team'));
+    });
   }
 
   api.postUser = function(user) {
-    return $http.post(urls.USERS, user).then(_.property('data.user'));
+    return api.url.then(function(url) {
+      return $http.post(url.users, user).then(_.property('data.user'));
+    });
   }
 
   return api;

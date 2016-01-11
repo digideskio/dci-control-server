@@ -63,4 +63,14 @@ module.exports = angular.module('app', [
     'color': 'info',
     'glyphicon': 'glyphicon-record'
   }
-});
+})
+.value('config', {})
+.run(['$http', '$q', 'config', function($http, $q, config) {
+  var d = $q.defer();
+  config.url = d.promise;
+  $http.get('/config.json').then(function(resp) {
+    d.resolve(resp.data.apiURL);
+  }, function(err) {
+    d.reject(err);
+  });
+}]);
